@@ -65,8 +65,11 @@ Create a `.env` file on your VPS:
 ```env
 IS_VPS=true
 # Sync interval in hours (e.g. 12 to run every 12 hours)
-# Omit this variable if you prefer triggering it via a system cron job instead
 SYNC_INTERVAL=12
+
+# Telegram Integration (Optional)
+TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
+TELEGRAM_CHAT_ID=your_personal_telegram_chat_id
 ```
 
 ### 3. Run on VPS
@@ -76,3 +79,20 @@ pip install -r requirements.txt
 playwright install chromium
 python auto_sync.py
 ```
+
+---
+
+## 🤖 Telegram Bot Remote Control (Optional)
+
+If `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are configured in your `.env` file, the script starts an interactive Telegram bot. 
+
+### Features:
+* **Immediate Manual Sync**: Trigger a sync at any time (even while the script is in its 12-hour sleep period) by sending `/sync` to your bot.
+* **Notifications**: Get automatic status alerts on Telegram whenever a sync starts, finishes, or encounters an error.
+* **Security**: The bot only responds to messages matching your specified `TELEGRAM_CHAT_ID`.
+
+### Commands:
+* `/sync` - Force an immediate, on-demand synchronization.
+* `/status` - Check if the sync loop is currently running or idle.
+* `/help` - List all available commands.
+

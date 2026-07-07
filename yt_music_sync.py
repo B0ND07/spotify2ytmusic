@@ -142,7 +142,7 @@ def main():
     total_tracks = len(tracks_to_sync)
     if total_tracks == 0:
         print("All tracks from CSV are already synced! Nothing to do.")
-        return
+        return 0, 0
 
     print(f"Found {total_tracks} new tracks to sync.")
     
@@ -185,6 +185,8 @@ def main():
     print(f"- Successfully synced: {success_count}")
     print(f"- Failed to sync: {failed_count}")
     print(f"Done! Progression stored in {sync_file}")
+    
+    return success_count, failed_count
 
 if __name__ == "__main__":
     main()
