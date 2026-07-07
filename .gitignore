@@ -1,0 +1,18 @@
+# Python virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Local session credentials (DO NOT COMMIT FOR SECURITY)
+browser_profile/
+browser.json
+oauth.json
+.cache/
+
+# User data
+spotify_liked_songs.csv
+synced_tracks.txt
+
+# Local configurations
+.env
