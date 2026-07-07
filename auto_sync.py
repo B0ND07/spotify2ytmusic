@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import signal
 import threading
 from dotenv import load_dotenv
 
@@ -15,12 +16,32 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 bot = None
+should_exit = False
+
 if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
     try:
         import telebot
         bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
     except ImportError:
         print("[WARNING] pyTelegramBotAPI is not installed. Telegram features will be disabled.")
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    global should_exit, bot
+    print(f"\n[SHUTDOWN] Received signal {signum}. Cleaning up...")
+    should_exit = True
+    if bot:
+        try:
+            print("[SHUTDOWN] Stopping Telegram bot polling...")
+            bot.stop_polling()
+        except Exception as e:
+            print(f"[SHUTDOWN] Error stopping bot: {e}")
+    print("[SHUTDOWN] Exiting...")
+    sys.exit(0)
+
+# Register signal handlers for graceful shutdown
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
 
 def send_telegram_message(message):
     if bot and TELEGRAM_CHAT_ID:
@@ -80,16 +101,22 @@ def run_sync_cycle(triggered_by="Scheduled Loop"):
         sync_lock.release()
 
 def scheduler_loop(interval_hours):
+    global should_exit
     interval_secs = float(interval_hours) * 3600
     print(f"Continuous Scheduler running in background. Interval: {interval_hours} hours.")
     
     # Run the first sync immediately on startup
     run_sync_cycle(triggered_by="Startup Sync")
     
-    while True:
+    while not should_exit:
         print(f"\n[Scheduler] Waiting {interval_hours} hours before next cycle...")
-        time.sleep(interval_secs)
-        run_sync_cycle(triggered_by="Scheduled Loop")
+        # Use a loop with small sleeps instead of one long sleep for faster shutdown
+        for _ in range(int(interval_secs)):
+            if should_exit:
+                break
+            time.sleep(1)
+        if not should_exit:
+            run_sync_cycle(triggered_by="Scheduled Loop")
 
 def setup_telegram_handlers():
     @bot.message_handler(commands=['start', 'help'])
@@ -130,6 +157,7 @@ def setup_telegram_handlers():
         bot.reply_to(message, status_text)
 
 def main():
+    global should_exit, bot
     interval_hours = os.getenv("SYNC_INTERVAL", "12")
     
     if bot:
@@ -145,8 +173,14 @@ def main():
         scheduler_thread.start()
         
         print("Starting Telegram Bot Polling (blocks main thread)...")
-        send_telegram_message("🤖 Sync Bot has started online!")
-        bot.infinity_polling()
+        try:
+            send_telegram_message("🤖 Sync Bot has started online!")
+            bot.infinity_polling(timeout=10)
+        except Exception as e:
+            print(f"[ERROR] Telegram polling error: {e}")
+        finally:
+            print("[SHUTDOWN] Telegram polling stopped")
+            should_exit = True
     else:
         # Standard Loop fallback (if Telegram is not configured)
         print("Telegram Bot config missing or incomplete. Running standard scheduler loop.")

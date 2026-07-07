@@ -16,3 +16,6 @@ synced_tracks.txt
 
 # Local configurations
 .env
+logs/
+start.sh
+
