@@ -174,8 +174,10 @@ def main():
         
         print("Starting Telegram Bot Polling (blocks main thread)...")
         try:
+            import logging
+            logging.getLogger('TeleBot').setLevel(logging.CRITICAL)
             send_telegram_message("🤖 Sync Bot has started online!")
-            bot.infinity_polling(timeout=10)
+            bot.infinity_polling(timeout=60, long_polling_timeout=60)
         except Exception as e:
             print(f"[ERROR] Telegram polling error: {e}")
         finally:

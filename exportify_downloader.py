@@ -1,6 +1,37 @@
 import os
 import sys
+import json
 from playwright.sync_api import sync_playwright
+
+def load_and_inject_cookies(context, cookie_file="spotify_cookies.json"):
+    if not os.path.exists(cookie_file):
+        return False
+    try:
+        with open(cookie_file, 'r', encoding='utf-8') as f:
+            raw_cookies = json.load(f)
+        
+        cookies = []
+        for c in raw_cookies:
+            cookie = {
+                "name": c.get("name"),
+                "value": c.get("value"),
+                "domain": c.get("domain"),
+                "path": c.get("path", "/"),
+                "secure": c.get("secure", True),
+                "httpOnly": c.get("httpOnly", False),
+            }
+            if "expirationDate" in c:
+                cookie["expires"] = int(c["expirationDate"])
+            elif "expires" in c:
+                cookie["expires"] = int(c["expires"])
+            cookies.append(cookie)
+            
+        print(f"Injecting {len(cookies)} cookies from {cookie_file}...")
+        context.add_cookies(cookies)
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to load/inject cookies: {e}")
+        return False
 
 def download_liked_songs():
     profile_dir = os.path.abspath("browser_profile")
@@ -36,16 +67,38 @@ def download_liked_songs():
                 # Wait for the Liked Songs entry to load (indicates logged in state)
                 page.wait_for_selector("tr:has-text('Liked')", timeout=30000)
             except Exception:
-                if headless:
-                    print("\n[ERROR] Playlists did not load automatically.")
-                    print("This means the browser profile session has expired or is not logged in.")
-                    print("Please run this script LOCALLY (non-headless) first to authenticate your Spotify account.")
-                    context.close()
-                    return False
+                cookie_file = "spotify_cookies.json"
+                if os.path.exists(cookie_file):
+                    print("\n[INFO] Playlists did not load automatically. Attempting cookie import from spotify_cookies.json...")
+                    if load_and_inject_cookies(context, cookie_file):
+                        print("Reloading Exportify...")
+                        page.goto("https://exportify.app/")
+                        if get_started.is_visible():
+                            get_started.click()
+                        try:
+                            page.wait_for_selector("tr:has-text('Liked')", timeout=30000)
+                            print("[SUCCESS] Session successfully restored via imported cookies!")
+                        except Exception:
+                            if headless:
+                                print("\n[ERROR] Playlists still did not load after importing cookies.")
+                                context.close()
+                                return False
+                    else:
+                        if headless:
+                            context.close()
+                            return False
                 else:
-                    print("\n[INFO] Please log in to Spotify and authorize Exportify in the browser window...")
-                    # Wait up to 5 minutes for the user to complete login in the opened browser window
-                    page.wait_for_selector("tr:has-text('Liked')", timeout=300000)
+                    if headless:
+                        print("\n[ERROR] Playlists did not load automatically.")
+                        print("This means the browser profile session has expired or is not logged in.")
+                        print("Please run this script LOCALLY (non-headless) first to authenticate your Spotify account,")
+                        print("or place a valid 'spotify_cookies.json' in this directory.")
+                        context.close()
+                        return False
+                    else:
+                        print("\n[INFO] Please log in to Spotify and authorize Exportify in the browser window...")
+                        # Wait up to 5 minutes for the user to complete login in the opened browser window
+                        page.wait_for_selector("tr:has-text('Liked')", timeout=300000)
             
             print("Found 'Liked' row. Starting export...")
             

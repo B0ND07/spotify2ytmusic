@@ -80,6 +80,12 @@ playwright install chromium
 python auto_sync.py
 ```
 
+### 4. Spotify Cookie Renewal (If Session Expires)
+If your Spotify session ever expires headlessly on the VPS, you don't need to run it locally again. Simply:
+1. Export your Spotify cookies as a JSON file using a browser extension (like *EditThisCookie* or *Get cookies.txt*).
+2. Upload and save the file as `spotify_cookies.json` in the root directory.
+3. The script will automatically detect this file, inject the fresh cookies, and restore your login session on the next sync run.
+
 ---
 
 ## 🤖 Telegram Bot Remote Control (Optional)

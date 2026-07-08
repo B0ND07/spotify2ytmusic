@@ -18,4 +18,5 @@ synced_tracks.txt
 .env
 logs/
 start.sh
+spotify_cookies.json
 
