@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  spotify2ytmusic:
+    build: .
+    container_name: spotify2ytmusic
+    restart: unless-stopped
+    volumes:
+      # Mount the persistent browser profile to cache Spotify cookies
+      - ./browser_profile:/app/browser_profile
+      # Mount the YouTube Music credentials
+      - ./browser.json:/app/browser.json
+      # Mount the database of already synced tracks so it persists across container updates
+      - ./synced_tracks.txt:/app/synced_tracks.txt
+      # Mount the temporary spotify csv file output
+      - ./spotify_liked_songs.csv:/app/spotify_liked_songs.csv
+    env_file:
+      - .env

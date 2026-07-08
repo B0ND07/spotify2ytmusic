@@ -102,3 +102,31 @@ If `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are configured in your `.env` fil
 * `/status` - Check if the sync loop is currently running or idle.
 * `/help` - List all available commands.
 
+---
+
+## 🐳 Run using Docker
+
+You can easily run this application in a Docker container. The Docker configuration uses the official Microsoft Playwright Python image, ensuring Chromium and all its OS dependencies are correctly pre-configured.
+
+### 1. Prerequisite
+Ensure you have generated your local credentials (`browser.json`, `synced_tracks.txt`, and `browser_profile` folder) by running the authentication steps locally or importing cookies as described above.
+
+### 2. Build and Run with Docker Compose
+To build and start the service in background mode:
+```bash
+docker compose up -d --build
+```
+
+### 3. Check logs
+To view the output/sync logs of the running container:
+```bash
+docker compose logs -f
+```
+
+### 4. Stopping
+To stop the background sync container:
+```bash
+docker compose down
+```
+
+
